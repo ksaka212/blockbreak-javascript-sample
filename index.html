@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブロック崩しゲーム</title>
+</head>
+
+<body>
+    <script>
+
+        //canvas作成
+        const canvas = document.createElement("canvas");
+
+        //canvasを設定するための便利な関数を使えるようにするらしい
+        const ctx = canvas.getContext("2d");
+
+        //縦横の大きさを設定
+        canvas.width = 400;
+        canvas.height = 400;
+
+        //背景色、ブロック、マージンのスタイルを設定
+        canvas.setAttribute(
+            "style",
+            "background-color:#ddd;display:block;margin:auto;"
+        );
+
+        //作成したcanvasをbodyタグの子要素へ
+        document.body.appendChild(canvas);
+
+        //ブロック崩しで必要な要素一覧
+        const ball = {
+            x: null,
+            y: null,
+            width: 5,
+            height: 5,
+            speed: 4,
+            dx: null,    //x方向への進行
+            dy: null,    //y方向への進行
+
+            //ボールの更新処理
+            update: function () {
+                //canvasへ四角形描画
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                //わからん
+                ctx.fill();
+
+                //左右の壁に当たった
+                if (this.x < 0 || this.x > canvas.width) this.dx *= -1;
+                //上下の壁に当たった
+                if (this.y < 0 || this.y > canvas.height) this.dy *= -1;
+
+                this.x += this.dx;
+                this.y += this.dy;
+            }
+        };
+        const paddle = {
+            x: null,
+            y: null,
+            width: 100,
+            height: 15,
+            speed: 0,
+
+            //paddle描画要関数
+            //update: () => { アロー関数は失敗する
+
+            update: function () {
+                //おそらく指定した座標へ四角形を描画？
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+
+                //わからん！
+                ctx.fill();
+
+                //paddleを横方向へずらす
+                this.x += this.speed;
+            }
+        };
+        const block = {
+            width: null,
+            height: 20,
+            data: [],   //幅、高さ、座標など具体的に描画するデータの配列
+
+            //更新処理
+            update: function () {
+                this.data.forEach(brick => {
+                    ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
+                    ctx.stroke();
+                });
+            }
+        };
+        const level = [
+            //プロック(0:無 1:有)
+            [0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1],
+        ];
+
+        //初期化処理
+        const init = () => {
+            //paddleの初期位置を決める
+            paddle.x = canvas.width / 2 - paddle.width / 2;
+            paddle.y = canvas.height - paddle.height;
+
+            //ballの初期位置、進行方向を決定
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2 + 50;
+            ball.dx = ball.speed;
+            ball.dy = ball.speed;
+
+
+            //ブロックの幅
+            block.width = canvas.width / level[0].length;
+            //ブロックの描画箇所
+            for (let i = 0; i < level.length; i++) {
+                for (let j = 0; j < level[i].length; j++) {
+                    if (level[i][j] == 1) {
+                        block.data.push({
+                            x: block.width * j,
+                            y: block.height * i,
+                            width: block.width,
+                            height: block.height
+                        });
+                    }
+                }
+            }
+        }
+
+        //当たり判定
+        //分からない
+        const collide = (obj1, obj2) => {
+            return obj1.x < obj2.x + obj2.width &&
+                obj2.x < obj1.x + obj1.width &&
+                obj1.y < obj2.y + obj2.height &&
+                obj2.y < obj1.y + obj1.height;
+        }
+
+        //メインの繰り返し処理
+        const loop = () => {
+
+            //パドルの前の描画が残るため、指定した範囲のcanvasを削除する、今回は画面全体
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            //パドル更新
+            paddle.update();
+
+            //ボール更新
+            ball.update();
+
+            //block更新
+            block.update();
+
+            //ballとpaddleが当たった
+            if (collide(ball, paddle)) {
+                ball.dy *= -1;
+                ball.y = paddle.y - ball.height;
+            }
+
+            //ballとblockが当たった
+            block.data.forEach((brick, index) => {
+                if (collide(ball, brick)) {
+                    ball.dy *= -1;
+                    //わからん
+                    block.data.splice(index, 1);
+                }
+            });
+            //最適なタイミングでアニメーション(loop関数)の更新を依頼する
+            window.requestAnimationFrame(loop);
+        }
+
+        //初期化処理実行
+        init();
+        //メイン処理実行
+        loop();
+
+        //キーボード操作のイベントリスナー
+        document.addEventListener("keydown", e => {
+            //←キーが押された
+            if (e.key == "ArrowLeft") paddle.speed = -6;
+            //→キーが押された
+            else if (e.key == "ArrowRight") paddle.speed = 6;
+        });
+        document.addEventListener("keyup", () => {
+            paddle.speed = 0;
+        });
+
+    </script>
+</body>
+
+</html>
